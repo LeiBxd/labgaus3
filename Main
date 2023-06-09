@@ -1,0 +1,18 @@
+package labgaus;
+
+import java.io.FileNotFoundException;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            LinearEquationSystem system = new LinearEquationSystem("C:\\test\\matrix.txt");
+            system.solve();
+            system.printSystem();
+            
+        } catch (FileNotFoundException e) {
+            System.out.println("Файл не найден: " + e.getMessage());
+        } catch (ArithmeticException e) {
+            System.out.println("Ошибка при решении системы уравнений: " + e.getMessage());
+        }
+    }
+}
