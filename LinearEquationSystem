@@ -1,0 +1,170 @@
+package labgaus;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+// Класс для хранения системы уравнений и ее решения
+public class LinearEquationSystem {
+    private int n; // количество уравнений
+    private int m; // количество неизвестных
+    private double[][] Ab; // коэффициенты при неизвестных и свободные члены
+    private double[] x; // решение системы уравнений
+
+    // Конструктор для создания объекта и чтения данных из файла
+    public LinearEquationSystem(String filename) throws FileNotFoundException {
+        Scanner scanner = new Scanner(new File(filename));
+        n = scanner.nextInt(); // считываем количество уравнений
+        m = scanner.nextInt(); // считываем количество неизвестных
+        Ab = new double[n][m + 1]; // создаем массив для хранения коэффициентов при неизвестных и свободных членах
+        x = new double[m]; // создаем массив для хранения решения системПродолжение кода:
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m + 1; j++) {
+                Ab[i][j] = scanner.nextDouble(); // считываем коэффициенты при неизвестных и свободные члены
+            }
+        }
+        scanner.close();
+    }
+    private double[] calculateCoefficients(int k) {
+        double[] coeffs = new double[n - k - 1];
+        for (int i = k + 1; i < n; i++) {
+            coeffs[i - k - 1] = Ab[i][k] / Ab[k][k];
+        }
+        return coeffs;
+    }
+
+
+    public int toTriangleForm() {
+        int result = 2; // по умолчанию считаем, что решение единственное
+
+        for (int k = 0; k < n - 1; k++) {
+            if (Ab[k][k] == 0) {
+                // Если на главной диагонали находится ноль, то нужно поменять местами строки
+                boolean swapped = false;
+                for (int i = k + 1; i < n; i++) {
+                    if (Ab[i][k] != 0) {
+                        // Меняем местами строки
+                        double[] temp = Ab[k];
+                        Ab[k] = Ab[i];
+                        Ab[i] = temp;
+                        swapped = true;
+                        break;
+                    }
+                }
+                if (!swapped) {
+                    // Если не удалось найти строку с ненулевым элементом в столбце, то система вырождена
+                    return -1;
+                }
+            }
+            double[] coeffs = calculateCoefficients(k);
+            for (int i = k + 1; i < n; i++) {
+                for (int j = k; j < m + 1; j++) {
+                    Ab[i][j] -= coeffs[i - k - 1] * Ab[k][j];
+                }
+            }
+        }
+
+        // Проверяем, есть ли решение системы уравнений
+        for (int i = 0; i < n; i++) {
+            boolean allZeroes = true;
+            for (int j = 0; j < m + 1; j++) {
+                if (Ab[i][j] != 0) {
+                    allZeroes = false;
+                    break;
+                }
+            }
+            if (allZeroes) {
+                // Если система вырождена и имеет бесконечное множество решений
+                return 0;
+            }
+        }
+
+        // Решаем систему уравнений методом обратной подстановки
+        for (int i = n - 1; i >= 0; i--) {
+            double coeff = Ab[i][m];
+            for (int j = i + 1; j < n; j++) {
+                coeff -= Ab[i][j] * x[j];
+            }
+            if (Ab[i][i] == 0 && coeff != 0) {
+                // Если на главной диагонали встречается ноль и свободный член не равен нулю, то система не имеет решения
+                return 1;
+            } else if (Ab[i][i] == 0 && coeff == 0) {
+                // Если на главной диагонали встречается ноль и свободный член равен нулю, то переменная может принимать любые значения, система имеет бесконечное множество решений
+                result = 0;
+                x[i] = 0;
+            } else {
+                x[i] = coeff / Ab[i][i];
+            }
+        }
+
+        return result;
+    }
+
+    // Метод для решения системы линейных уравнений
+    public void solve() {
+        toTriangleForm();
+
+        // Проверяем, есть ли решение системы уравнений
+        for (int i = 0; i < n; i++) {
+            boolean allZeroes = true;
+            for (int j = 0; j < m + 1; j++) {
+                if (Ab[i][j] != 0) {
+                    allZeroes = false;
+                    break;
+                }
+            }
+            if (allZeroes) {
+                throw new ArithmeticException("Система уравнений вырождена и имеет бесконечное множество решений");
+            }
+        }
+
+        // Решаем систему уравнений методом обратной подстановки
+        for (int i = n - 1; i >= 0; i--) {
+            double coeff = Ab[i][m];
+            for (int j = i + 1; j < n; j++) {
+                coeff -= Ab[i][j] * x[j];
+            }
+            x[i] = coeff / Ab[i][i];
+        }
+    }
+    public void printSystem() {
+        System.out.println("Исходная система уравнений:");
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                System.out.printf("%e ", Ab[i][j]);
+            }
+            System.out.printf("| %e\n", Ab[i][m]);
+        }
+
+        System.out.println("Приведенная система уравнений:");
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (j < i) {
+                    System.out.print("0 ");
+                } else {
+                    System.out.printf("%e ", Ab[i][j]);
+                }
+            }
+            System.out.printf("| %e\n", Ab[i][m]);
+        }
+
+        if (x == null) {
+            System.out.println("Система не была решена.");
+        } else if (x.length == 0) {
+            System.out.println("Система имеет бесконечное множество решений.");
+        } else {
+            System.out.println("Решение системы уравнений:");
+            for (int i = 0; i < n; i++) {
+                System.out.printf("x%d = %e\n", (i + 1), x[i]);
+            }
+        }
+    }
+
+    // Метод для вывода решения системы уравнений на экран
+    public void printSolution() {
+        for (int i = 0; i < m; i++) {
+            System.out.printf("x%d = %.2f%n", i + 1, x[i]);
+        }
+    }
+}
